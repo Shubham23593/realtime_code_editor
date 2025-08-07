@@ -13,7 +13,7 @@ import {
   FaComments,
 } from "react-icons/fa";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://realtime-code-editor-ehmj.onrender.com");
 
 const App = () => {
   const [joined, setJoined] = useState(false);
