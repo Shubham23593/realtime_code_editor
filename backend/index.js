@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve } from 'path';
 import dotenv from 'dotenv';
-import fs from 'fs';
+import fs, { existsSync } from 'fs';
 import { exec } from 'child_process';
 import util from 'util';
 
@@ -378,23 +378,23 @@ function toast(roomId, message) {
 }
 
 // ─── Serve Frontend ──────────────────────────────────────────────────────────
-const staticHandler = (req, res, next) => {
-  try {
-    const basePath = resolve(process.cwd(), 'frontend', 'dist');
-    // SPA fallback — serve index.html for all non-API, non-socket routes
-    if (!req.path.startsWith('/api') && !req.path.startsWith('/socket.io')) {
-      const indexPath = join(basePath, 'index.html');
-      return res.sendFile(indexPath, (err) => {
-        if (err) next(); // frontend not built yet, skip
-      });
-    }
-    next();
-  } catch (err) {
-    next(err);
-  }
-};
+const distPath = resolve(process.cwd(), 'frontend', 'dist');
 
-app.use(staticHandler);
+// Serve static assets (JS, CSS, images, etc.) with correct MIME types
+app.use(express.static(distPath));
+
+// SPA fallback — only for non-API, non-asset routes, serve index.html
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+    return next();
+  }
+  const indexPath = join(distPath, 'index.html');
+  if (existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    next(); // frontend not built yet
+  }
+});
 
 // ─── Start Server ────────────────────────────────────────────────────────────
 const port = process.env.PORT || 5000;
