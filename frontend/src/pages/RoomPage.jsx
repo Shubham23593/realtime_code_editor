@@ -9,8 +9,9 @@ import {
   FaSignOutAlt, FaPlay, FaFileUpload, FaComments,
   FaHandPaper, FaUsers, FaCode, FaLink, FaEye,
   FaChalkboardTeacher, FaTimes, FaPaperPlane, FaCog,
-  FaCheck, FaBan, FaCheckCircle, FaChartBar, FaSun, FaMoon
+  FaCheck, FaBan, FaCheckCircle, FaChartBar, FaDesktop
 } from 'react-icons/fa';
+import AnimatedBackground from '../components/AnimatedBackground';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -43,7 +44,6 @@ const RoomPage = () => {
   const [showChat, setShowChat] = useState(false);
   const [showPanel, setShowPanel] = useState(false); 
   const [unreadCount, setUnreadCount] = useState(0);
-  const [theme, setTheme] = useState('dark');
 
   // Permission system
   const [mode, setMode] = useState('free');
@@ -185,16 +185,9 @@ const RoomPage = () => {
   }, [showChat]);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    // for direct tailwind dark mode toggles:
-    if(theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.classList.add('dark');
+  }, []);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleCodeChange = (newCode) => {
@@ -297,46 +290,44 @@ const RoomPage = () => {
   const modeLabel = { free: 'Free Mode', teacher: 'Teacher Only', raise_hand: 'Raise Hand', group: 'Group Mode' };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 font-sans transition-colors duration-300 text-slate-800 dark:text-slate-100 overflow-hidden">
-      
+    <div className="flex flex-col h-screen bg-[#060912] font-sans transition-colors duration-300 text-slate-100 overflow-hidden relative" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <AnimatedBackground />
+
       {/* ── Topbar ── */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 z-50 shadow-sm">
+      <header className="flex items-center justify-between px-4 py-3 bg-[#060912]/80 backdrop-blur-xl border-b border-slate-800/60 flex-shrink-0 z-50 shadow-lg shadow-black/20">
         <div className="flex items-center gap-4 min-w-0">
-          <button onClick={leaveRoom} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/30 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 rounded-md transition" title="Back to Dashboard">
+          <button onClick={leaveRoom} className="p-2 bg-slate-900/60 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-slate-700/50 rounded-lg transition" title="Back to Dashboard">
             <FaSignOutAlt />
           </button>
           <div className="flex flex-col min-w-0">
-            <span className="font-bold text-sm truncate">{roomInfo?.name || roomId}</span>
-            <code className="text-[10px] font-mono text-indigo-500 truncate">{roomId}</code>
+            <span className="font-bold text-sm truncate text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{roomInfo?.name || roomId}</span>
+            <code className="text-[10px] font-mono text-indigo-400 truncate">{roomId}</code>
           </div>
-          <div className={`text-[10px] font-bold px-3 py-1 rounded-full border ${modeColors[mode]} hidden sm:block`}>
+          <div className={`text-[10px] font-bold px-3 py-1 rounded-md border backdrop-blur-md ${modeColors[mode]} hidden sm:block`}>
             {modeLabel[mode]}
           </div>
           {!canEdit && (
-            <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800">
+            <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-md bg-red-500/20 text-red-400 border border-red-500/30">
               <FaEye /> Read-only
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <button onClick={toggleTheme} className="p-2 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition" title="Toggle Theme">
-            {theme === 'dark' ? <FaSun /> : <FaMoon />}
-          </button>
+        <div className="flex items-center gap-3 relative z-10">
           
-          <span className={`w-2 h-2 rounded-full hidden sm:block ${connected ? 'bg-green-500 shadow-[0_0_6px_#22c55e]' : 'bg-red-500'}`} title={connected ? 'Connected' : 'Disconnected'} />
+          <span className={`w-2 h-2 rounded-full hidden sm:block ${connected ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-red-500'}`} title={connected ? 'Connected' : 'Disconnected'} />
           
-          <button onClick={() => setShowPanel(!showPanel)} className="md:hidden p-2 text-slate-500 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800" title="Settings">
+          <button onClick={() => setShowPanel(!showPanel)} className="md:hidden p-2 text-slate-400 border border-slate-700/50 rounded-lg hover:bg-slate-800/50" title="Settings">
             <FaCog />
           </button>
           
-          <span className="text-sm text-slate-500 dark:text-slate-400 hidden sm:flex items-center gap-1.5"><FaUsers /> {users.length}</span>
+          <span className="text-sm text-slate-400 hidden sm:flex items-center gap-1.5"><FaUsers className="text-indigo-400" /> {users.length}</span>
           
-          <button onClick={copyInviteLink} className="p-2 text-slate-500 border border-slate-200 dark:border-slate-700 rounded-md hover:text-indigo-500 hover:border-indigo-500 transition hidden sm:block" title="Copy invite link">
+          <button onClick={copyInviteLink} className="p-2 text-slate-400 border border-slate-700/50 rounded-lg hover:text-indigo-400 hover:border-indigo-500/50 transition hidden sm:block bg-slate-900/40" title="Copy invite link">
             <FaLink />
           </button>
           
-          <button onClick={() => setShowChat(!showChat)} className={`relative p-2 border ${showChat ? 'border-indigo-500 text-indigo-500' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-500'} rounded-md transition`} title="Chat">
+          <button onClick={() => setShowChat(!showChat)} className={`relative p-2 border ${showChat ? 'border-indigo-500 text-indigo-400' : 'border-slate-700/50 text-slate-400 hover:text-indigo-400 hover:border-indigo-500/50'} rounded-lg transition bg-slate-900/40`} title="Chat">
             <FaComments />
             {unreadCount > 0 && !showChat && (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
@@ -346,7 +337,7 @@ const RoomPage = () => {
           </button>
           
           {isTeacher && (
-            <button onClick={() => setShowModePanel(!showModePanel)} className={`p-2 border ${showModePanel ? 'border-indigo-500 text-indigo-500' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-500'} rounded-md transition`} title="Change Mode">
+            <button onClick={() => setShowModePanel(!showModePanel)} className={`p-2 border ${showModePanel ? 'border-indigo-500 text-indigo-400' : 'border-slate-700/50 text-slate-400 hover:text-indigo-400 hover:border-indigo-500/50'} rounded-lg transition bg-slate-900/40`} title="Change Mode">
               <FaChalkboardTeacher />
             </button>
           )}
@@ -355,12 +346,12 @@ const RoomPage = () => {
 
       {/* ── Mode Panel (Teacher) ── */}
       {isTeacher && showModePanel && (
-        <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-3 flex flex-wrap items-center gap-4 flex-shrink-0 shadow-inner">
-          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Editor Mode:</p>
+        <div className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800/60 p-3 flex flex-wrap items-center gap-4 flex-shrink-0 relative z-20">
+          <p className="text-xs font-bold text-slate-400 font-mono uppercase">Editor Mode:</p>
           <div className="flex flex-wrap gap-2">
             {Object.entries(modeLabel).map(([key, label]) => (
               <button key={key} onClick={() => changeMode(key)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition ${mode === key ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border-indigo-500' : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-400'}`}>
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${mode === key ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50 shadow-inner' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600'}`}>
                 {label}
               </button>
             ))}
@@ -369,52 +360,52 @@ const RoomPage = () => {
       )}
 
       {/* ── Main Body ── */}
-      <div className="flex flex-1 overflow-hidden min-h-0 relative">
+      <div className="flex flex-1 overflow-hidden min-h-0 relative z-10 w-full">
         
         {/* ── Left Sidebar ── */}
-        <aside className={`${showPanel ? 'flex absolute inset-y-0 left-0 z-40 shadow-xl' : 'hidden'} md:flex flex-col w-64 min-w-[16rem] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 overflow-y-auto`}>
+        <aside className={`${showPanel ? 'flex absolute inset-y-0 left-0 shadow-2xl z-40' : 'hidden'} md:flex flex-col w-72 min-w-[18rem] bg-slate-900/60 backdrop-blur-xl border-r border-slate-800/60 overflow-y-auto`}>
           
           {/* Participants */}
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2"><FaUsers /> Participants ({users.length})</h3>
+          <div className="p-4 border-b border-slate-800/60">
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-3 flex items-center gap-2"><FaUsers /> Participants ({users.length})</h3>
             <div className="flex flex-col gap-2">
               {users.map((u, i) => (
-                <div key={i} className="flex items-center justify-between py-1">
+                <div key={i} className="flex items-center justify-between py-1 px-2 hover:bg-slate-800/40 rounded-lg transition-colors">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-5 h-5 rounded bg-indigo-500 text-white flex items-center justify-center font-bold text-[10px] shrink-0">{u.name?.[0]?.toUpperCase()}</span>
-                    <span className="text-xs truncate">{u.name === user?.name ? `${u.name} (You)` : u.name}</span>
-                    {u.role === 'teacher' && <span className="text-[9px] font-bold px-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600 border border-amber-200 shrink-0">T</span>}
+                    <span className="w-6 h-6 rounded bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono">{u.name?.[0]?.toUpperCase()}</span>
+                    <span className="text-xs truncate font-medium text-slate-200">{u.name === user?.name ? `${u.name} (You)` : u.name}</span>
+                    {u.role === 'teacher' && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">T</span>}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    {u.canEdit ? <FaCode className="text-slate-400 text-xs" title="Can edit" /> : <FaEye className="text-slate-300 text-xs" title="Read-only" />}
+                    {u.canEdit ? <FaCode className="text-emerald-400 text-xs" title="Can edit" /> : <FaEye className="text-slate-500 text-xs" title="Read-only" />}
                     {isTeacher && u.name !== user?.name && (
-                      <div className="flex gap-1 ml-1">
+                      <div className="flex gap-1 ml-1 opacity-60 hover:opacity-100 transition-opacity">
                         {!u.canEdit && u.role !== 'teacher' && (
-                          <button onClick={() => approveHand(u.name)} className="p-1 rounded bg-green-50 dark:bg-green-900/30 text-green-600 hover:bg-green-100" title="Grant edit"><FaCheck className="text-[10px]" /></button>
+                          <button onClick={() => approveHand(u.name)} className="p-1.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/40" title="Grant edit"><FaCheck className="text-[10px]" /></button>
                         )}
                         {u.canEdit && u.role !== 'teacher' && (
-                          <button onClick={() => revokeEdit(u.name)} className="p-1 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 hover:bg-amber-100" title="Revoke edit"><FaTimes className="text-[10px]" /></button>
+                          <button onClick={() => revokeEdit(u.name)} className="p-1.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 hover:bg-amber-500/40" title="Revoke edit"><FaTimes className="text-[10px]" /></button>
                         )}
-                        <button onClick={() => kickUser(u.name)} className="p-1 rounded bg-red-50 dark:bg-red-900/30 text-red-600 hover:bg-red-100" title="Remove user"><FaBan className="text-[10px]" /></button>
+                        <button onClick={() => kickUser(u.name)} className="p-1.5 rounded-md bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/40" title="Remove user"><FaBan className="text-[10px]" /></button>
                       </div>
                     )}
                   </div>
                 </div>
               ))}
             </div>
-            {typing && <p className="text-[10px] text-amber-500 italic mt-2">{typing}</p>}
+            {typing && <p className="text-[10px] text-amber-400 italic mt-2 text-center animate-pulse">{typing}</p>}
           </div>
 
           {/* Pending Hands */}
           {isTeacher && pendingHands.length > 0 && (
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-blue-50 dark:bg-blue-900/10">
-              <h3 className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-2"><FaHandPaper /> Raised Hands ({pendingHands.length})</h3>
+            <div className="p-4 border-b border-slate-800/60 bg-blue-900/10 backdrop-blur-md">
+              <h3 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest font-mono mb-3 flex items-center gap-2"><FaHandPaper /> Raised Hands ({pendingHands.length})</h3>
               {pendingHands.map((name, i) => (
-                <div key={i} className="flex flex-col gap-2 text-xs py-1">
-                  <span>{name}</span>
+                <div key={i} className="flex flex-col gap-2 text-xs py-2 px-2 bg-slate-900/40 rounded-lg mb-2">
+                  <span className="font-semibold">{name}</span>
                   <div className="flex gap-2">
-                    <button onClick={() => approveHand(name)} className="flex-1 py-1 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-semibold text-[10px]">Allow</button>
-                    <button onClick={() => rejectHand(name)} className="flex-1 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-semibold text-[10px]">Deny</button>
+                    <button onClick={() => approveHand(name)} className="flex-1 py-1.5 rounded-md bg-emerald-600/20 text-emerald-400 border border-emerald-600/30 font-bold hover:bg-emerald-600/30 transition shadow-inner text-[10px]">Allow</button>
+                    <button onClick={() => rejectHand(name)} className="flex-1 py-1.5 rounded-md bg-red-600/20 text-red-400 border border-red-600/30 font-bold hover:bg-red-600/30 transition shadow-inner text-[10px]">Deny</button>
                   </div>
                 </div>
               ))}
@@ -422,10 +413,10 @@ const RoomPage = () => {
           )}
 
           {/* Language & File Upload */}
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-4">
+          <div className="p-4 border-b border-slate-800/60 space-y-4">
             <div>
-              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2"><FaCode /> Language</h3>
-              <select value={language} onChange={handleLanguageChange} className="w-full text-xs px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500">
+              <h3 className="text-[10px] font-bold text-slate-400 font-mono uppercase tracking-widest mb-2 flex items-center gap-2"><FaCode /> Language</h3>
+              <select value={language} onChange={handleLanguageChange} className="w-full text-xs px-3 py-2 bg-slate-950/50 border border-slate-700/50 rounded-lg focus:outline-none focus:border-indigo-500 text-slate-200 font-mono font-bold appearance-none">
                 <option value="c">C</option>
                 <option value="cpp">C++</option>
                 <option value="python">Python</option>
@@ -434,55 +425,55 @@ const RoomPage = () => {
               </select>
             </div>
             <div>
-              <label className="flex items-center justify-center gap-2 w-full py-2 bg-slate-50 dark:bg-slate-800 border border-dashed border-slate-400 dark:border-slate-600 rounded-md text-xs text-slate-500 font-medium cursor-pointer hover:border-indigo-500 hover:text-indigo-500 transition">
+              <label className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-800/40 border border-dashed border-slate-700 rounded-xl text-xs text-slate-400 font-bold font-mono cursor-pointer hover:border-indigo-500 hover:text-indigo-400 hover:bg-slate-800/80 transition-all">
                 <input type="file" className="hidden" onChange={handleFileUpload} />
-                <FaFileUpload /> Upload File
+                <FaFileUpload className="text-sm" /> Import Local Code
               </label>
-              {uploadedFileName && <p className="text-[10px] text-green-500 mt-1 truncate">{uploadedFileName}</p>}
+              {uploadedFileName && <p className="text-[10px] text-emerald-400 mt-2 truncate text-center font-mono">{uploadedFileName}</p>}
             </div>
           </div>
 
           {/* Teacher: Post Problem */}
           {isTeacher && (
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-2"><FaChalkboardTeacher /> Post Problem</h3>
+            <div className="p-4 border-b border-slate-800/60">
+              <h3 className="text-[10px] font-bold text-amber-400 uppercase tracking-widest mb-3 font-mono flex items-center gap-2"><FaChalkboardTeacher /> Post Problem</h3>
               <input
                 type="text"
                 value={problemTitleInput}
                 onChange={(e) => setProblemTitleInput(e.target.value)}
-                placeholder="Problem title..."
-                className="w-full text-xs px-2 py-1.5 mb-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-amber-500"
+                placeholder="Problem logic title..."
+                className="w-full text-xs px-3 py-2.5 mb-2 bg-slate-950/60 border border-slate-700/50 rounded-xl focus:outline-none focus:border-amber-500 placeholder-slate-600 font-mono text-white transition-colors"
               />
               <textarea
                 value={problemInput}
                 onChange={(e) => setProblemInput(e.target.value)}
-                placeholder="Describe problem..."
+                placeholder="Describe scenario/requirements..."
                 rows={3}
-                className="w-full text-xs p-2 mb-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-md resize-y focus:outline-none focus:border-amber-500"
+                className="w-full text-xs p-3 mb-3 bg-slate-950/60 border border-slate-700/50 rounded-xl resize-y focus:outline-none focus:border-amber-500 placeholder-slate-600 font-mono text-white transition-colors"
               />
-              <button onClick={postProblem} className="w-full py-1.5 rounded bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition shadow-sm">Post to Students</button>
+              <button onClick={postProblem} className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow-lg shadow-amber-500/20">Broadcast Problem</button>
             </div>
           )}
 
           {/* Teacher: View Submissions */}
           {isTeacher && (
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-              <button onClick={loadSubmissions} className="w-full flex items-center justify-center gap-2 py-2 rounded bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 text-xs font-bold transition hover:bg-indigo-100 dark:hover:bg-indigo-900/40">
-                <FaChartBar /> View Submissions
+            <div className="p-4 border-b border-slate-800/60">
+              <button onClick={loadSubmissions} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 text-xs font-bold transition hover:bg-indigo-600/30">
+                <FaChartBar className="text-sm" /> Evaluate Submissions
               </button>
             </div>
           )}
 
           {/* Student: Actions */}
           {!isTeacher && (
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-2 mt-auto">
+            <div className="p-4 border-b border-slate-800/60 space-y-3 mt-auto">
               {(mode === 'raise_hand' || mode === 'group') && !canEdit && (
-                <button onClick={raiseHand} disabled={handRaised} className={`w-full flex items-center justify-center gap-2 py-2 text-xs font-bold rounded text-white transition ${handRaised ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-sm'}`}>
-                  <FaHandPaper /> {handRaised ? 'Waiting...' : 'Raise Hand'}
+                <button onClick={raiseHand} disabled={handRaised} className={`w-full flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-xl text-white transition-all shadow-lg ${handRaised ? 'bg-cyan-500/50 shadow-cyan-500/10 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-500/20'}`}>
+                  <FaHandPaper /> {handRaised ? 'Waiting for Approval...' : 'Raise Hand'}
                 </button>
               )}
-              <button onClick={submitCode} disabled={submitting} className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold rounded bg-green-600 hover:bg-green-700 text-white transition shadow-sm disabled:opacity-70 disabled:cursor-not-allowed">
-                <FaPaperPlane /> {submitting ? 'Submitting...' : 'Submit Code'}
+              <button onClick={submitCode} disabled={submitting} className="w-full flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-70 disabled:cursor-not-allowed">
+                <FaPaperPlane /> {submitting ? 'Submitting Logic...' : 'Submit Code'}
               </button>
             </div>
           )}
@@ -490,66 +481,69 @@ const RoomPage = () => {
         </aside>
 
         {/* ── Editor & Output Area ── */}
-        <div className={`flex flex-col flex-1 min-w-0 ${showPanel && 'hidden md:flex'}`}>
+        <div className={`flex flex-col flex-1 min-w-0 bg-[#0a0f1c]/90 rounded-none md:rounded-tl-2xl shadow-[-10px_0_30px_rgba(0,0,0,0.5)] border-l border-slate-800/60 ${showPanel && 'hidden md:flex'}`}>
           
           {/* Problem Banner */}
           {problem && (
-            <div className="bg-amber-50 dark:bg-amber-900/10 border-b border-amber-200 dark:border-amber-800/50 p-3 shrink-0">
-              <div className="flex items-center justify-between text-xs font-bold text-amber-600">
-                <span>Problem: {problemTitle || 'Statement'}</span>
-                <button onClick={() => setShowProblem(!showProblem)} className="focus:outline-none hover:text-amber-700">{showProblem ? 'Hide' : 'Show'}</button>
+            <div className="bg-amber-500/10 backdrop-blur-md border border-amber-500/20 m-4 rounded-2xl p-4 shrink-0 shadow-lg shadow-amber-500/5">
+              <div className="flex items-center justify-between text-xs font-black text-amber-400 uppercase tracking-widest font-mono">
+                <span>Task: {problemTitle || 'Exercise Statement'}</span>
+                <button onClick={() => setShowProblem(!showProblem)} className="focus:outline-none hover:text-amber-300 py-1 px-3 border border-amber-500/30 rounded-md transition">{showProblem ? 'Minimize' : 'View'}</button>
               </div>
-              {showProblem && <p className="text-xs text-slate-700 dark:text-slate-300 mt-2 whitespace-pre-wrap">{problem}</p>}
+              {showProblem && <p className="text-sm font-mono text-slate-300 mt-3 whitespace-pre-wrap leading-relaxed">{problem}</p>}
             </div>
           )}
 
           {/* CodeMirror/Monaco Wrapper */}
-          <div className="flex-1 relative min-h-0 bg-white dark:bg-[#1e1e1e]">
+          <div className="flex-1 relative min-h-0 bg-[#0a0f1c]">
             <Editor
               height="100%"
               language={language}
               value={code}
               onChange={handleCodeChange}
-              theme={theme === 'dark' ? 'vs-dark' : 'light'}
+              theme="vs-dark"
               options={{
                 minimap: { enabled: false },
-                fontSize: 14,
+                fontSize: 15,
+                fontFamily: "'Fira Code', 'JetBrains Mono', 'Courier New', monospace",
                 readOnly: !canEdit,
                 wordWrap: 'on',
                 scrollBeyondLastLine: false,
                 renderLineHighlight: canEdit ? 'all' : 'none',
+                padding: { top: 16 },
+                lineHeight: 24
               }}
             />
             {!canEdit && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-sm border border-red-500/50 rounded-full px-4 py-1.5 text-xs text-red-400 font-medium flex items-center gap-2 pointer-events-none">
-                <FaEye /> Read-only — {mode === 'raise_hand' ? 'Raise hand to edit' : 'Waiting for teacher'}
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-red-950/80 backdrop-blur-md border border-red-500/50 rounded-full px-5 py-2 text-xs text-red-300 font-bold uppercase tracking-widest flex items-center gap-2 pointer-events-none shadow-xl shadow-red-500/10 relative z-50">
+                <FaEye className="text-red-400" /> Read-only mode — {mode === 'raise_hand' ? 'Raise hand to edit' : 'Awaiting instructor'}
               </div>
             )}
           </div>
 
           {/* Output Panel */}
-          <div className="h-48 shrink-0 flex flex-col border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
-            <div className="flex items-center gap-4 px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-              <button onClick={runCode} className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded shadow-sm transition">
-                <FaPlay /> Run Code
+          <div className="h-64 shrink-0 flex flex-col border-t border-slate-800/60 bg-slate-900/80 backdrop-blur-xl relative z-10">
+            <div className="flex items-center gap-4 px-5 py-3 border-b border-slate-800/60 bg-[#060912]/50">
+              <button onClick={runCode} className="flex items-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-500/20 transition-all font-mono tracking-widest uppercase">
+                <FaPlay /> Compile & Run
               </button>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded">{language.toUpperCase()}</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-md font-mono">{language.toUpperCase()}</span>
             </div>
             
-            <div className="flex flex-1 min-h-0 divide-x divide-slate-200 dark:divide-slate-800">
-              <div className="flex-1 flex flex-col min-w-0">
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 py-1 bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">Input (stdin)</div>
+            <div className="flex flex-1 min-h-0 divide-x divide-slate-800/60">
+              <div className="flex-1 flex flex-col min-w-0 bg-[#030408]/50">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono px-4 py-2 border-b border-slate-800/60 flex items-center gap-2">Standard Input</div>
                 <textarea
-                  className="flex-1 w-full bg-white dark:bg-slate-950 border-none resize-none p-3 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none"
+                  className="flex-1 w-full bg-transparent border-none resize-none px-4 py-3 text-xs font-mono text-slate-300 focus:outline-none placeholder-slate-700 leading-relaxed"
                   value={inputData}
                   onChange={(e) => setInputData(e.target.value)}
-                  placeholder="Provide input here..."
+                  placeholder="// Provide stdin parameters here"
                 />
               </div>
-              <div className="flex-1 flex flex-col min-w-0">
-                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 py-1 bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">Output</div>
-                <pre className="flex-1 w-full bg-slate-50 dark:bg-slate-950 overflow-y-auto p-3 text-xs font-mono text-slate-800 dark:text-slate-200 whitespace-pre-wrap word-break">
-                  {output || 'Output will appear here...'}
+              <div className="flex-1 flex flex-col min-w-0 bg-[#030408]/80">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono px-4 py-2 border-b border-slate-800/60 flex items-center gap-2">Terminal Output</div>
+                <pre className="flex-1 w-full bg-transparent overflow-y-auto px-4 py-3 text-xs font-mono text-emerald-400 whitespace-pre-wrap break-words leading-relaxed">
+                  {output || '> Running execution cycle...'}
                 </pre>
               </div>
             </div>
@@ -558,20 +552,23 @@ const RoomPage = () => {
 
         {/* ── Chat Panel ── */}
         {showChat && (
-          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-72 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col z-40 shadow-2xl sm:relative sm:shadow-none transition-all">
-            <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-sm font-bold flex items-center gap-2"><FaComments className="text-indigo-500" /> Chat</h3>
-              <button onClick={() => setShowChat(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><FaTimes /></button>
+          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-[340px] bg-slate-900/90 backdrop-blur-2xl border-l border-slate-800/60 flex flex-col z-50 shadow-[-20px_0_40px_rgba(0,0,0,0.5)] transition-all">
+            <div className="flex items-center justify-between p-4 border-b border-slate-800/60 bg-[#060912]/50">
+              <h3 className="text-sm font-bold flex items-center gap-2 font-mono uppercase tracking-widest text-slate-200"><FaComments className="text-indigo-400" /> Comm Link</h3>
+              <button onClick={() => setShowChat(false)} className="text-slate-500 hover:text-white bg-slate-800/50 rounded-md p-1.5 transition-colors border border-slate-700/50"><FaTimes /></button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 bg-slate-50 dark:bg-slate-950/50">
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-transparent">
               {chatMessages.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center mt-8">No messages yet.</p>
+                <div className="text-xs text-slate-600 font-mono text-center flex flex-col items-center justify-center h-full opacity-50">
+                  <FaComments className="text-3xl mb-3" />
+                  <p>Encrypted channel open.</p>
+                </div>
               ) : (
                 chatMessages.map((msg, i) => (
-                  <div key={i} className={`flex flex-col max-w-[85%] ${msg.user === user?.name ? 'self-end items-end' : 'self-start items-start'}`}>
-                    <span className="text-[9px] text-slate-400 mb-0.5 font-medium">{msg.user === user?.name ? 'You' : msg.user}</span>
-                    <div className={`px-3 py-1.5 text-xs rounded-lg rounded-tl-sm ${msg.user === user?.name ? 'bg-indigo-600 text-white rounded-br-sm rounded-bl-lg rounded-tr-lg rounded-tl-lg' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-bl-sm rounded-br-lg rounded-tr-lg rounded-tl-lg text-slate-800 dark:text-slate-200'}`}>
+                  <div key={i} className={`flex flex-col max-w-[90%] ${msg.user === user?.name ? 'self-end items-end' : 'self-start items-start'}`}>
+                    <span className="text-[10px] text-slate-500 mb-1 font-mono uppercase tracking-wider">{msg.user === user?.name ? 'You' : msg.user}</span>
+                    <div className={`px-4 py-2.5 text-[13px] leading-relaxed shadow-lg font-mono ${msg.user === user?.name ? 'bg-indigo-600 text-white rounded-xl rounded-tr-sm shadow-indigo-500/20' : 'bg-slate-800/80 border border-slate-700/50 rounded-xl rounded-tl-sm text-slate-200'}`}>
                       {msg.message}
                     </div>
                   </div>
@@ -580,16 +577,16 @@ const RoomPage = () => {
               <div ref={chatEndRef} />
             </div>
             
-            <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
+            <div className="p-4 bg-[#060912]/80 border-t border-slate-800/60 flex gap-3 backdrop-blur-md">
               <input
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Type..."
-                className="flex-1 min-w-0 bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-indigo-500 rounded-md px-3 py-1.5 text-xs text-slate-800 dark:text-slate-100 focus:outline-none transition-colors"
+                placeholder="Broadcast sequence..."
+                className="flex-1 min-w-0 bg-slate-950/80 border border-slate-700/50 focus:border-indigo-500 rounded-xl px-4 py-3 text-xs text-white focus:outline-none transition-all font-mono placeholder-slate-600 shadow-inner"
               />
-              <button onClick={sendMessage} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md text-xs transition-colors shrink-0"><FaPaperPlane /></button>
+              <button onClick={sendMessage} className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-xl text-sm transition-all shadow-lg shadow-indigo-500/20 shrink-0"><FaPaperPlane /></button>
             </div>
           </aside>
         )}
@@ -597,30 +594,33 @@ const RoomPage = () => {
 
       {/* ── Submissions Modal ── */}
       {showSubmissions && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowSubmissions(false)}>
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-              <h2 className="text-lg font-bold flex items-center gap-2"><FaCheckCircle className="text-green-500" /> Student Submissions</h2>
-              <button onClick={() => setShowSubmissions(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500"><FaTimes /></button>
+        <div className="fixed inset-0 bg-[#060912]/80 backdrop-blur-xl z-[100] flex items-center justify-center p-4 relative" onClick={() => setShowSubmissions(false)}>
+          <div className="bg-slate-900/90 border border-slate-700/50 rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl shadow-black relative" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6 border-b border-slate-800/60 bg-[#060912]/50 rounded-t-3xl">
+              <h2 className="text-xl font-bold flex items-center gap-3 text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}><FaCheckCircle className="text-emerald-400" /> Network Submissions</h2>
+              <button onClick={() => setShowSubmissions(false)} className="p-2 hover:bg-red-500/20 border border-slate-800 hover:border-red-500/50 transition-colors rounded-xl text-slate-400 hover:text-red-400"><FaTimes /></button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {submissions.length === 0 ? (
-                <p className="text-center text-slate-400 text-sm py-8">No submissions yet.</p>
+                <div className="flex flex-col items-center justify-center opacity-50 py-16">
+                   <FaChartBar className="text-4xl text-slate-600 mb-4" />
+                   <p className="text-center font-mono text-slate-400 tracking-wider">Awaiting cadet logic sequences.</p>
+                </div>
               ) : (
                 submissions.map((sub, i) => (
-                  <div key={i} className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                    <div className="flex flex-wrap items-center gap-3 mb-3">
-                      <span className="font-bold text-sm text-slate-800 dark:text-slate-100 flex-1">{sub.studentName}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded">{sub.language.toUpperCase()}</span>
-                      <span className="text-xs text-slate-500">{new Date(sub.createdAt).toLocaleString()}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 uppercase">{sub.status}</span>
+                  <div key={i} className="bg-slate-950/60 border border-slate-800/60 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                    <div className="flex flex-wrap items-center gap-4 mb-4">
+                      <span className="font-bold text-lg text-white font-mono flex-1">{sub.studentName}</span>
+                      <span className="text-[10px] font-bold px-3 py-1 bg-indigo-500/10 text-indigo-400 rounded-md border border-indigo-500/20 font-mono uppercase tracking-widest">{sub.language}</span>
+                      <span className="text-xs text-slate-500 font-mono tracking-wider">{new Date(sub.createdAt).toLocaleString()}</span>
+                      <span className="text-[10px] font-bold px-3 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest font-mono">{sub.status}</span>
                     </div>
-                    <div className="bg-slate-950 rounded-md border border-slate-800 overflow-hidden">
-                      <pre className="p-3 text-xs font-mono text-slate-300 overflow-x-auto max-h-48 overflow-y-auto">{sub.code}</pre>
+                    <div className="bg-[#0a0f1c] rounded-xl border border-slate-800 overflow-hidden shadow-inner">
+                      <pre className="p-4 text-xs font-mono text-slate-300 overflow-x-auto max-h-64 overflow-y-auto leading-relaxed">{sub.code}</pre>
                     </div>
                     {sub.output && (
-                      <div className="mt-3 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 rounded-md overflow-hidden">
-                        <pre className="p-2 text-xs font-mono text-green-700 dark:text-green-400 max-h-24 overflow-y-auto">{sub.output}</pre>
+                      <div className="mt-4 bg-emerald-950/30 border border-emerald-500/20 rounded-xl overflow-hidden shadow-inner">
+                        <pre className="p-4 text-xs font-mono text-emerald-400 max-h-32 overflow-y-auto">OUTPUT:\n{sub.output}</pre>
                       </div>
                     )}
                   </div>

@@ -10,6 +10,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import RoomPage from './pages/RoomPage';
 import LandingPage from './pages/LandingPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import Preloader from './components/Preloader';
 
 const DashboardRouter = () => {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ const DashboardRouter = () => {
 const App = () => {
   return (
     <>
+      <Preloader />
       <ToastContainer
         position="top-right"
         autoClose={3000}
