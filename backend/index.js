@@ -384,7 +384,7 @@ const distPath = resolve(process.cwd(), 'frontend', 'dist');
 app.use(express.static(distPath));
 
 // SPA fallback — only for non-API, non-asset routes, serve index.html
-app.get('*', (req, res, next) => {
+app.get(/.*/, (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
     return next();
   }
