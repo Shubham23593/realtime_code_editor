@@ -1,6 +1,11 @@
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve } from 'path';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import { exec } from 'child_process';
+import util from 'util';
+
+const execPromise = util.promisify(exec);
 
 // Load .env from backend directory regardless of where server is run from
 const __filename = fileURLToPath(import.meta.url);
@@ -160,13 +165,61 @@ io.on("connection", (socket) => {
   // ─── Compile ────────────────────────────────────────────────────────────────
   socket.on("compileCode", async ({ code, roomId, language, version, stdin }) => {
     try {
-      const response = await axios.post("https://emkc.org/api/v2/piston/execute", {
-        language,
-        version,
-        files: [{ content: code }],
-        stdin: stdin || ""
-      });
-      io.to(roomId).emit("codeResponse", response.data);
+      const dir = join(process.cwd(), 'temp');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+      
+      const fileId = Date.now();
+      let output = '';
+      
+      if (language === 'javascript') {
+        const filePath = join(dir, `${fileId}.js`);
+        fs.writeFileSync(filePath, code);
+        try {
+          const { stdout, stderr } = await execPromise(`node "${filePath}"`);
+          output = stdout || stderr;
+        } catch (execErr) { output = execErr.stdout || execErr.stderr || execErr.message; }
+        fs.unlinkSync(filePath);
+      } else if (language === 'python') {
+        const filePath = join(dir, `${fileId}.py`);
+        fs.writeFileSync(filePath, code);
+        try {
+          const { stdout, stderr } = await execPromise(`python "${filePath}"`);
+          output = stdout || stderr;
+        } catch (execErr) { 
+          try {
+            const { stdout, stderr } = await execPromise(`python3 "${filePath}"`);
+            output = stdout || stderr;
+          } catch (e2) { output = e2.stdout || e2.stderr || e2.message; }
+        }
+        fs.unlinkSync(filePath);
+      } else if (language === 'c' || language === 'cpp') {
+        const ext = language === 'c' ? 'c' : 'cpp';
+        const compiler = language === 'c' ? 'gcc' : 'g++';
+        const filePath = join(dir, `${fileId}.${ext}`);
+        const exePath = join(dir, `${fileId}.exe`);
+        fs.writeFileSync(filePath, code);
+        try {
+          await execPromise(`${compiler} "${filePath}" -o "${exePath}"`);
+          const { stdout, stderr } = await execPromise(`"${exePath}"`);
+          output = stdout || stderr;
+          if (fs.existsSync(exePath)) fs.unlinkSync(exePath);
+        } catch (execErr) { output = execErr.stdout || execErr.stderr || execErr.message; }
+        fs.unlinkSync(filePath);
+      } else if (language === 'java') {
+        const filePath = join(dir, `Main.java`);
+        fs.writeFileSync(filePath, code);
+        try {
+          await execPromise(`javac "${filePath}"`);
+          const { stdout, stderr } = await execPromise(`java -cp "${dir}" Main`);
+          output = stdout || stderr;
+          if (fs.existsSync(join(dir, 'Main.class'))) fs.unlinkSync(join(dir, 'Main.class'));
+        } catch (execErr) { output = execErr.stdout || execErr.stderr || execErr.message; }
+        fs.unlinkSync(filePath);
+      } else {
+        output = "❌ local execution not configured for this language.";
+      }
+      
+      io.to(roomId).emit("codeResponse", { run: { output: output }});
     } catch (err) {
       io.to(roomId).emit("codeResponse", {
         run: { output: "❌ Error compiling code: " + (err.message || "Unknown error") }

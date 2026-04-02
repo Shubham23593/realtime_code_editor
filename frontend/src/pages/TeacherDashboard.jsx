@@ -5,11 +5,12 @@ import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import {
   FaChalkboardTeacher, FaPlus, FaCopy, FaSignOutAlt,
-  FaUsers, FaLink, FaTrash, FaCode, FaCheck
+  FaUsers, FaCode, FaCheck, FaExternalLinkAlt, FaGlobe, FaHandPaper, FaDesktop
 } from 'react-icons/fa';
+import { CgSpinner } from 'react-icons/cg';
 
 const TeacherDashboard = () => {
-  const { user, token, logout, API_BASE, authHeader } = useAuth();
+  const { user, logout, API_BASE, authHeader } = useAuth();
   const [rooms, setRooms] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [roomName, setRoomName] = useState('');
@@ -45,7 +46,7 @@ const TeacherDashboard = () => {
       setRooms(prev => [res.data.room, ...prev]);
       setShowCreate(false);
       setRoomName('');
-      toast.success(`Room "${res.data.room.name}" created! 🎉`);
+      toast.success(`Room "${res.data.room.name}" created!`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create room');
     } finally {
@@ -56,155 +57,199 @@ const TeacherDashboard = () => {
   const copyLink = (roomId) => {
     const link = `${window.location.origin}/room/${roomId}`;
     navigator.clipboard.writeText(link);
-    setCopiedId(roomId);
-    toast.success('Invite link copied! 🔗');
+    setCopiedId(link);
+    toast.success('Invite link copied!');
     setTimeout(() => setCopiedId(''), 2000);
   };
 
   const copyRoomId = (roomId) => {
     navigator.clipboard.writeText(roomId);
+    setCopiedId(roomId);
     toast.success('Room ID copied!');
+    setTimeout(() => setCopiedId(''), 2000);
   };
 
   const enterRoom = (roomId) => navigate(`/room/${roomId}`);
-
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const modeLabels = {
-    free: { label: 'Free Mode', color: '#22c55e', icon: '🌐' },
-    teacher: { label: 'Teacher Only', color: '#f59e0b', icon: '👩‍🏫' },
-    raise_hand: { label: 'Raise Hand', color: '#3b82f6', icon: '✋' },
-    group: { label: 'Group Mode', color: '#8b5cf6', icon: '👥' },
+    free: { label: 'Free Mode', style: 'text-green-700 bg-green-100 border-green-200 dark:text-green-400 dark:bg-green-900/30 dark:border-green-800', icon: <FaGlobe /> },
+    teacher: { label: 'Teacher Only', style: 'text-amber-700 bg-amber-100 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-800', icon: <FaChalkboardTeacher /> },
+    raise_hand: { label: 'Raise Hand', style: 'text-blue-700 bg-blue-100 border-blue-200 dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800', icon: <FaHandPaper /> },
+    group: { label: 'Group Mode', style: 'text-purple-700 bg-purple-100 border-purple-200 dark:text-purple-400 dark:bg-purple-900/30 dark:border-purple-800', icon: <FaUsers /> },
   };
 
   return (
-    <div className="cv-dashboard">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col font-sans transition-colors duration-300 text-slate-800 dark:text-slate-100">
+      
       {/* Header */}
-      <header className="cv-dash-header">
-        <div className="cv-dash-brand">
-          <FaCode className="cv-dash-brand-icon" />
-          <div>
-            <h1 className="cv-dash-brand-name">CodeVerse <span>Classroom</span></h1>
-            <p className="cv-dash-brand-role">Teacher Dashboard</p>
+      <header className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-indigo-100 dark:bg-indigo-900/40 p-2 rounded-lg">
+              <FaDesktop className="text-xl text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold">CodeVerse <span className="font-normal text-indigo-600 dark:text-indigo-400">Classroom</span></h1>
+            </div>
           </div>
-        </div>
-        <div className="cv-dash-header-right">
-          <div className="cv-user-pill">
-            <span className="cv-user-avatar">{user?.name?.[0]?.toUpperCase()}</span>
-            <span className="cv-user-name">{user?.name}</span>
-            <span className="cv-role-badge cv-role-teacher">Teacher</span>
+          
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-full">
+              <div className="w-6 h-6 rounded-full bg-indigo-500 text-white flex items-center justify-center text-xs font-bold">
+                {user?.name?.[0]?.toUpperCase()}
+              </div>
+              <span className="text-sm font-medium">{user?.name}</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 uppercase tracking-wide border border-amber-200 dark:border-amber-800">Teacher</span>
+            </div>
+            <button 
+              onClick={handleLogout} 
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            >
+              <FaSignOutAlt /> <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
-          <button onClick={handleLogout} className="cv-logout-btn">
-            <FaSignOutAlt /> Logout
-          </button>
         </div>
       </header>
 
-      <main className="cv-dash-main">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        
         {/* Stats Row */}
-        <div className="cv-stats-row">
-          <div className="cv-stat-card">
-            <span className="cv-stat-num">{rooms.length}</span>
-            <span className="cv-stat-label">Total Rooms</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm text-center">
+            <span className="block text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 mb-1">{rooms.length}</span>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Rooms</span>
           </div>
-          <div className="cv-stat-card">
-            <span className="cv-stat-num">{rooms.filter(r => r.isActive).length}</span>
-            <span className="cv-stat-label">Active Rooms</span>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm text-center">
+            <span className="block text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 mb-1">{rooms.filter(r => r.isActive).length}</span>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Active Rooms</span>
           </div>
-          <div className="cv-stat-card">
-            <span className="cv-stat-num">∞</span>
-            <span className="cv-stat-label">Students Supported</span>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm text-center flex flex-col justify-center items-center">
+             <span className="block text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 mb-1">∞</span>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Students Supported</span>
           </div>
         </div>
 
         {/* Create Room */}
-        <div className="cv-section">
-          <div className="cv-section-header">
-            <h2 className="cv-section-title">
-              <FaUsers /> My Rooms
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <FaUsers className="text-slate-400" /> My Classrooms
             </h2>
-            <button onClick={() => setShowCreate(!showCreate)} className="cv-btn-create">
+            <button 
+              onClick={() => setShowCreate(!showCreate)} 
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
               <FaPlus /> Create Room
             </button>
           </div>
 
           {showCreate && (
-            <form onSubmit={createRoom} className="cv-create-form">
-              <div className="cv-create-form-inner">
-                <input
-                  type="text"
-                  value={roomName}
-                  onChange={(e) => setRoomName(e.target.value)}
-                  placeholder="Room name (e.g., CS101 - Algorithms)"
-                  className="cv-input"
-                  autoFocus
-                />
-                <select
-                  value={roomMode}
-                  onChange={(e) => setRoomMode(e.target.value)}
-                  className="cv-input cv-select"
+            <div className="p-6 bg-slate-50 dark:bg-slate-950/50 border-b border-slate-200 dark:border-slate-800">
+              <form onSubmit={createRoom} className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="flex-1 w-full space-y-1">
+                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Room Name</label>
+                  <input
+                    type="text"
+                    value={roomName}
+                    onChange={(e) => setRoomName(e.target.value)}
+                    placeholder="e.g., CS101 - Algorithms"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex-1 w-full space-y-1">
+                  <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Default Role/Mode</label>
+                  <select
+                    value={roomMode}
+                    onChange={(e) => setRoomMode(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors appearance-none"
+                  >
+                    <option value="free">Free Mode (everyone edits)</option>
+                    <option value="teacher">Teacher Only</option>
+                    <option value="raise_hand">Raise Hand Mode</option>
+                    <option value="group">Group Mode (max 5)</option>
+                  </select>
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={creating}
+                  className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  <option value="free">🌐 Free Mode (everyone edits)</option>
-                  <option value="teacher">👩‍🏫 Teacher Only</option>
-                  <option value="raise_hand">✋ Raise Hand Mode</option>
-                  <option value="group">👥 Group Mode (max 5)</option>
-                </select>
-                <button type="submit" className="cv-btn-primary" disabled={creating}>
-                  {creating ? <span className="cv-btn-spinner" /> : '🚀 Create'}
+                  {creating ? <CgSpinner className="animate-spin text-lg" /> : 'Create Room'}
                 </button>
-              </div>
-            </form>
+              </form>
+            </div>
           )}
 
           {/* Rooms Grid */}
-          {loading ? (
-            <div className="cv-loading-grid">
-              {[1, 2, 3].map(i => <div key={i} className="cv-room-skeleton" />)}
-            </div>
-          ) : rooms.length === 0 ? (
-            <div className="cv-empty-state">
-              <div className="cv-empty-icon">🏫</div>
-              <p>No rooms yet. Create your first classroom!</p>
-            </div>
-          ) : (
-            <div className="cv-rooms-grid">
-              {rooms.map(room => {
-                const modeInfo = modeLabels[room.mode] || modeLabels.free;
-                return (
-                  <div key={room._id} className="cv-room-card">
-                    <div className="cv-room-card-header">
-                      <div className="cv-room-info">
-                        <h3 className="cv-room-name">{room.name}</h3>
-                        <div className="cv-room-id-row">
-                          <code className="cv-room-id">{room.roomId}</code>
-                          <button onClick={() => copyRoomId(room.roomId)} className="cv-icon-btn" title="Copy Room ID">
-                            <FaCopy />
-                          </button>
+          <div className="p-6">
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-40 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+                ))}
+              </div>
+            ) : rooms.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 mb-4">
+                  <FaDesktop className="text-2xl" />
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 font-medium">No rooms yet. Create your first classroom!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {rooms.map(room => {
+                  const modeInfo = modeLabels[room.mode] || modeLabels.free;
+                  return (
+                    <div key={room._id} className="group bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-5 hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-700 transition-all flex flex-col">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <h3 className="font-bold text-lg truncate" title={room.name}>{room.name}</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <code className="text-xs font-mono font-bold px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded border border-indigo-100 dark:border-indigo-800">
+                              {room.roomId}
+                            </code>
+                            <button 
+                              onClick={() => copyRoomId(room.roomId)} 
+                              className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                              title="Copy ID"
+                            >
+                              {copiedId === room.roomId ? <FaCheck className="text-green-500" /> : <FaCopy />}
+                            </button>
+                          </div>
                         </div>
+                        <span className={`flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded border ${modeInfo.style}`}>
+                          {modeInfo.icon} {modeInfo.label}
+                        </span>
                       </div>
-                      <span className="cv-mode-badge" style={{ background: modeInfo.color + '22', color: modeInfo.color, border: `1px solid ${modeInfo.color}44` }}>
-                        {modeInfo.icon} {modeInfo.label}
-                      </span>
+                      
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mb-5 flex-1">
+                        Created {new Date(room.createdAt).toLocaleDateString()}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-auto">
+                        <button 
+                          onClick={() => enterRoom(room.roomId)} 
+                          className="flex-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-medium text-sm py-2 px-3 rounded flex justify-center items-center gap-2 transition-colors"
+                        >
+                          <FaCode /> Enter
+                        </button>
+                        <button 
+                          onClick={() => copyLink(room.roomId)} 
+                          className="flex-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-700/50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-sm py-2 px-3 border border-slate-200 dark:border-slate-600 rounded flex justify-center items-center gap-2 transition-colors"
+                        >
+                           {copiedId === `${window.location.origin}/room/${room.roomId}` ? <FaCheck className="text-green-500" /> : <FaExternalLinkAlt className="text-xs" />} Link
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="cv-room-meta">
-                      <span>Created {new Date(room.createdAt).toLocaleDateString()}</span>
-                    </div>
-
-                    <div className="cv-room-actions">
-                      <button onClick={() => enterRoom(room.roomId)} className="cv-btn-enter">
-                        <FaCode /> Enter Room
-                      </button>
-                      <button onClick={() => copyLink(room.roomId)} className="cv-btn-link">
-                        {copiedId === room.roomId ? <><FaCheck /> Copied!</> : <><FaLink /> Copy Link</>}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
+
       </main>
     </div>
   );

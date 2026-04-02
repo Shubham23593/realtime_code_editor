@@ -20,6 +20,7 @@
     "@uiw/react-codemirror": "^4.24.2",
     "axios": "^1.14.0",
     "framer-motion": "^12.23.12",
+    "gsap": "^3.14.2",
     "path-to-regexp": "^8.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

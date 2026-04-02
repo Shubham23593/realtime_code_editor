@@ -6,9 +6,10 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import {
-  FaSignOutAlt, FaPlay, FaCopy, FaFileUpload, FaComments,
-  FaHandPaper, FaUsers, FaCode, FaCheck, FaLink, FaEye,
-  FaChalkboardTeacher, FaTimes, FaPaperPlane, FaCog
+  FaSignOutAlt, FaPlay, FaFileUpload, FaComments,
+  FaHandPaper, FaUsers, FaCode, FaLink, FaEye,
+  FaChalkboardTeacher, FaTimes, FaPaperPlane, FaCog,
+  FaCheck, FaBan, FaCheckCircle, FaChartBar, FaSun, FaMoon
 } from 'react-icons/fa';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -27,7 +28,7 @@ let socket;
 const RoomPage = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { user, token, authHeader } = useAuth();
+  const { user, authHeader } = useAuth();
 
   // ── State ──────────────────────────────────────────────────────────────────
   const [code, setCode] = useState(LANG_TEMPLATES.c);
@@ -40,7 +41,9 @@ const RoomPage = () => {
   const [chatInput, setChatInput] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [showChat, setShowChat] = useState(false);
-  const [showPanel, setShowPanel] = useState(true);
+  const [showPanel, setShowPanel] = useState(false); 
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [theme, setTheme] = useState('dark');
 
   // Permission system
   const [mode, setMode] = useState('free');
@@ -97,7 +100,7 @@ const RoomPage = () => {
     });
 
     socket.on('usersUpdate', (userList) => setUsers(userList));
-    socket.on('userJoined', (name) => { if (name !== user?.name) toast.success(`${name} joined 👋`); });
+    socket.on('userJoined', (name) => { if (name !== user?.name) toast.success(`${name} joined`); });
     socket.on('userLeft', (name) => { if (name !== user?.name) toast.info(`${name} left`); });
 
     socket.on('codeUpdate', (newCode) => setCode(newCode));
@@ -106,6 +109,9 @@ const RoomPage = () => {
 
     socket.on('chatMessage', ({ user: u, message, timestamp }) => {
       setChatMessages(prev => [...prev, { user: u, message, timestamp }]);
+      if (!showChat) {
+        setUnreadCount(prev => prev + 1);
+      }
     });
 
     socket.on('codeResponse', (res) => setOutput(res.run?.output || 'No output'));
@@ -113,27 +119,27 @@ const RoomPage = () => {
     // Permission events
     socket.on('modeChanged', ({ mode: m, activeEditors: ae }) => {
       setMode(m); setActiveEditors(ae);
-      toast.info(`Editor mode: ${m.replace('_', ' ').toUpperCase()} 🔁`);
+      toast.info(`Editor mode: ${m.replace('_', ' ').toUpperCase()}`);
     });
 
     socket.on('handRaised', ({ userName: un, pendingHands: ph }) => {
       setPendingHands(ph);
-      if (isTeacher) toast.info(`✋ ${un} wants to edit!`);
+      if (isTeacher) toast.info(`${un} wants to edit!`);
     });
 
     socket.on('editApproved', ({ userName: un, activeEditors: ae }) => {
       setActiveEditors(ae);
-      if (un === user?.name) { toast.success('✅ You can now edit the code!'); setHandRaised(false); }
+      if (un === user?.name) { toast.success('You can now edit the code!'); setHandRaised(false); }
     });
 
     socket.on('editRejected', ({ userName: un, pendingHands: ph }) => {
       setPendingHands(ph);
-      if (un === user?.name) { toast.error('❌ Edit request rejected'); setHandRaised(false); }
+      if (un === user?.name) { toast.error('Edit request rejected'); setHandRaised(false); }
     });
 
     socket.on('editRevoked', ({ userName: un, activeEditors: ae }) => {
       setActiveEditors(ae);
-      if (un === user?.name) toast.warn('⚠️ Your edit access was revoked');
+      if (un === user?.name) toast.warn('Your edit access was revoked');
     });
 
     socket.on('youWereKicked', ({ message }) => {
@@ -144,12 +150,12 @@ const RoomPage = () => {
 
     socket.on('problemPosted', ({ problem: p, problemTitle: pt }) => {
       setProblem(p); setProblemTitle(pt);
-      toast.info('📌 New problem posted by teacher!');
+      toast.info('New problem posted by teacher!');
       setShowProblem(true);
     });
 
-    socket.on('codeSubmitted', ({ userName: un, timestamp }) => {
-      if (isTeacher) toast.success(`📩 ${un} submitted their code!`);
+    socket.on('codeSubmitted', ({ userName: un }) => {
+      if (isTeacher) toast.success(`${un} submitted their code!`);
     });
 
     return () => {
@@ -158,7 +164,6 @@ const RoomPage = () => {
     };
   }, [roomId, user]);
 
-  // ── Load room info ─────────────────────────────────────────────────────────
   useEffect(() => {
     const loadRoom = async () => {
       try {
@@ -172,6 +177,24 @@ const RoomPage = () => {
   }, [roomId]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chatMessages]);
+
+  useEffect(() => {
+    if (showChat) {
+      setUnreadCount(0);
+    }
+  }, [showChat]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    // for direct tailwind dark mode toggles:
+    if(theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const handleCodeChange = (newCode) => {
@@ -190,14 +213,13 @@ const RoomPage = () => {
 
   const runCode = () => {
     socket.emit('compileCode', { code, roomId, language, version: '*', stdin: inputData });
-    setOutput('⏳ Compiling...');
-    toast.info('🧠 Compiling...');
+    setOutput('Compiling...');
+    toast.info('Compiling code...');
   };
 
   const sendMessage = () => {
     if (!chatInput.trim()) return;
     const msg = chatInput.trim();
-    setChatMessages(prev => [...prev, { user: user?.name, message: msg }]);
     socket.emit('chatMessage', { roomId, user: user?.name, message: msg });
     setChatInput('');
   };
@@ -218,28 +240,18 @@ const RoomPage = () => {
 
   const copyInviteLink = () => {
     navigator.clipboard.writeText(`${window.location.origin}/room/${roomId}`);
-    toast.success('Invite link copied! 🔗');
+    toast.success('Invite link copied!');
   };
 
-  // Permission actions
   const raiseHand = () => {
     socket.emit('raiseHand', { roomId, userName: user?.name });
     setHandRaised(true);
-    toast.info('✋ Hand raised! Waiting for teacher approval...');
+    toast.info('Hand raised! Waiting for approval...');
   };
 
-  const approveHand = (targetUser) => {
-    socket.emit('approveHand', { roomId, targetUser });
-  };
-
-  const rejectHand = (targetUser) => {
-    socket.emit('rejectHand', { roomId, targetUser });
-  };
-
-  const revokeEdit = (targetUser) => {
-    socket.emit('revokeEdit', { roomId, targetUser });
-  };
-
+  const approveHand = (targetUser) => { socket.emit('approveHand', { roomId, targetUser }); };
+  const rejectHand = (targetUser) => { socket.emit('rejectHand', { roomId, targetUser }); };
+  const revokeEdit = (targetUser) => { socket.emit('revokeEdit', { roomId, targetUser }); };
   const kickUser = (targetUser) => {
     if (confirm(`Remove ${targetUser} from the room?`)) {
       socket.emit('kickUser', { roomId, targetUser });
@@ -255,22 +267,17 @@ const RoomPage = () => {
   const postProblem = () => {
     if (!problemInput.trim()) return toast.error('Problem cannot be empty');
     socket.emit('postProblem', { roomId, problem: problemInput, problemTitle: problemTitleInput });
-    // Also save to DB
-    axios.post(`${API_BASE}/api/rooms/${roomId}/problem`, {
-      problem: problemInput, problemTitle: problemTitleInput
-    }, { headers: authHeader() }).catch(() => {});
+    axios.post(`${API_BASE}/api/rooms/${roomId}/problem`, { problem: problemInput, problemTitle: problemTitleInput }, { headers: authHeader() }).catch(() => {});
     setProblemInput(''); setProblemTitleInput('');
-    toast.success('📌 Problem posted to all students!');
+    toast.success('Problem posted!');
   };
 
   const submitCode = async () => {
     setSubmitting(true);
     try {
-      await axios.post(`${API_BASE}/api/submissions`, {
-        roomId, code, language, output
-      }, { headers: authHeader() });
+      await axios.post(`${API_BASE}/api/submissions`, { roomId, code, language, output }, { headers: authHeader() });
       socket.emit('submitCode', { roomId, userName: user?.name, code, language });
-      toast.success('📩 Code submitted successfully!');
+      toast.success('Code submitted successfully!');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Submission failed');
     } finally {
@@ -286,49 +293,74 @@ const RoomPage = () => {
     } catch { toast.error('Failed to load submissions'); }
   };
 
-  const modeColors = { free: '#22c55e', teacher: '#f59e0b', raise_hand: '#3b82f6', group: '#8b5cf6' };
-  const modeLabel = { free: '🌐 Free', teacher: '👩‍🏫 Teacher Only', raise_hand: '✋ Raise Hand', group: '👥 Group' };
+  const modeColors = { free: 'border-green-500 text-green-500', teacher: 'border-amber-500 text-amber-500', raise_hand: 'border-blue-500 text-blue-500', group: 'border-purple-500 text-purple-500' };
+  const modeLabel = { free: 'Free Mode', teacher: 'Teacher Only', raise_hand: 'Raise Hand', group: 'Group Mode' };
 
   return (
-    <div className="cv-room">
+    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-950 font-sans transition-colors duration-300 text-slate-800 dark:text-slate-100 overflow-hidden">
+      
       {/* ── Topbar ── */}
-      <header className="cv-room-header">
-        <div className="cv-room-header-left">
-          <button onClick={leaveRoom} className="cv-back-btn" title="Back to Dashboard">
+      <header className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 z-50 shadow-sm">
+        <div className="flex items-center gap-4 min-w-0">
+          <button onClick={leaveRoom} className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/30 text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 border border-slate-200 dark:border-slate-700 rounded-md transition" title="Back to Dashboard">
             <FaSignOutAlt />
           </button>
-          <div className="cv-room-title-group">
-            <span className="cv-room-label">{roomInfo?.name || roomId}</span>
-            <code className="cv-room-code-id">{roomId}</code>
+          <div className="flex flex-col min-w-0">
+            <span className="font-bold text-sm truncate">{roomInfo?.name || roomId}</span>
+            <code className="text-[10px] font-mono text-indigo-500 truncate">{roomId}</code>
           </div>
-          <div className="cv-mode-indicator" style={{ borderColor: modeColors[mode], color: modeColors[mode] }}>
+          <div className={`text-[10px] font-bold px-3 py-1 rounded-full border ${modeColors[mode]} hidden sm:block`}>
             {modeLabel[mode]}
           </div>
           {!canEdit && (
-            <span className="cv-readonly-badge"><FaEye /> Read-only</span>
+            <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800">
+              <FaEye /> Read-only
+            </span>
           )}
         </div>
 
-        <div className="cv-room-header-right">
-          <span className={`cv-conn-dot ${connected ? 'cv-conn-on' : 'cv-conn-off'}`} title={connected ? 'Connected' : 'Disconnected'} />
-          <span className="cv-users-count"><FaUsers /> {users.length}</span>
-          <button onClick={copyInviteLink} className="cv-icon-btn-sm" title="Copy invite link"><FaLink /></button>
-          <button onClick={() => setShowChat(!showChat)} className={`cv-icon-btn-sm ${showChat ? 'cv-icon-btn-active' : ''}`} title="Chat"><FaComments /></button>
+        <div className="flex items-center gap-3">
+          <button onClick={toggleTheme} className="p-2 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition" title="Toggle Theme">
+            {theme === 'dark' ? <FaSun /> : <FaMoon />}
+          </button>
+          
+          <span className={`w-2 h-2 rounded-full hidden sm:block ${connected ? 'bg-green-500 shadow-[0_0_6px_#22c55e]' : 'bg-red-500'}`} title={connected ? 'Connected' : 'Disconnected'} />
+          
+          <button onClick={() => setShowPanel(!showPanel)} className="md:hidden p-2 text-slate-500 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800" title="Settings">
+            <FaCog />
+          </button>
+          
+          <span className="text-sm text-slate-500 dark:text-slate-400 hidden sm:flex items-center gap-1.5"><FaUsers /> {users.length}</span>
+          
+          <button onClick={copyInviteLink} className="p-2 text-slate-500 border border-slate-200 dark:border-slate-700 rounded-md hover:text-indigo-500 hover:border-indigo-500 transition hidden sm:block" title="Copy invite link">
+            <FaLink />
+          </button>
+          
+          <button onClick={() => setShowChat(!showChat)} className={`relative p-2 border ${showChat ? 'border-indigo-500 text-indigo-500' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-500'} rounded-md transition`} title="Chat">
+            <FaComments />
+            {unreadCount > 0 && !showChat && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+          
           {isTeacher && (
-            <button onClick={() => setShowModePanel(!showModePanel)} className="cv-icon-btn-sm" title="Change Mode"><FaCog /></button>
+            <button onClick={() => setShowModePanel(!showModePanel)} className={`p-2 border ${showModePanel ? 'border-indigo-500 text-indigo-500' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-500'} rounded-md transition`} title="Change Mode">
+              <FaChalkboardTeacher />
+            </button>
           )}
         </div>
       </header>
 
       {/* ── Mode Panel (Teacher) ── */}
       {isTeacher && showModePanel && (
-        <div className="cv-mode-panel">
-          <p className="cv-mode-panel-title">Select Editor Mode:</p>
-          <div className="cv-mode-btns">
+        <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-3 flex flex-wrap items-center gap-4 flex-shrink-0 shadow-inner">
+          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Editor Mode:</p>
+          <div className="flex flex-wrap gap-2">
             {Object.entries(modeLabel).map(([key, label]) => (
               <button key={key} onClick={() => changeMode(key)}
-                className={`cv-mode-opt ${mode === key ? 'cv-mode-opt-active' : ''}`}
-                style={{ '--mode-color': modeColors[key] }}>
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold border transition ${mode === key ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border-indigo-500' : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-400'}`}>
                 {label}
               </button>
             ))}
@@ -336,151 +368,149 @@ const RoomPage = () => {
         </div>
       )}
 
-      <div className="cv-room-body">
+      {/* ── Main Body ── */}
+      <div className="flex flex-1 overflow-hidden min-h-0 relative">
+        
         {/* ── Left Sidebar ── */}
-        <aside className={`cv-sidebar ${showPanel ? 'cv-sidebar-open' : ''}`}>
-          <div className="cv-sidebar-section">
-            <h3 className="cv-sidebar-heading"><FaUsers /> Participants ({users.length})</h3>
-            <div className="cv-user-list">
+        <aside className={`${showPanel ? 'flex absolute inset-y-0 left-0 z-40 shadow-xl' : 'hidden'} md:flex flex-col w-64 min-w-[16rem] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 overflow-y-auto`}>
+          
+          {/* Participants */}
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2"><FaUsers /> Participants ({users.length})</h3>
+            <div className="flex flex-col gap-2">
               {users.map((u, i) => (
-                <div key={i} className="cv-user-row">
-                  <div className="cv-user-left">
-                    <span className="cv-avatar-sm">{u.name?.[0]?.toUpperCase()}</span>
-                    <span className="cv-user-item-name">{u.name === user?.name ? `${u.name} (You)` : u.name}</span>
-                    {u.role === 'teacher' && <span className="cv-badge-teacher">T</span>}
+                <div key={i} className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-5 h-5 rounded bg-indigo-500 text-white flex items-center justify-center font-bold text-[10px] shrink-0">{u.name?.[0]?.toUpperCase()}</span>
+                    <span className="text-xs truncate">{u.name === user?.name ? `${u.name} (You)` : u.name}</span>
+                    {u.role === 'teacher' && <span className="text-[9px] font-bold px-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-600 border border-amber-200 shrink-0">T</span>}
                   </div>
-                  <div className="cv-user-right">
-                    {u.canEdit ? <span className="cv-edit-on" title="Can edit">✏️</span> : <span className="cv-edit-off" title="Read-only">👁️</span>}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {u.canEdit ? <FaCode className="text-slate-400 text-xs" title="Can edit" /> : <FaEye className="text-slate-300 text-xs" title="Read-only" />}
                     {isTeacher && u.name !== user?.name && (
-                      <div className="cv-teacher-actions">
+                      <div className="flex gap-1 ml-1">
                         {!u.canEdit && u.role !== 'teacher' && (
-                          <button onClick={() => approveHand(u.name)} className="cv-act-btn cv-act-approve" title="Grant edit">✓</button>
+                          <button onClick={() => approveHand(u.name)} className="p-1 rounded bg-green-50 dark:bg-green-900/30 text-green-600 hover:bg-green-100" title="Grant edit"><FaCheck className="text-[10px]" /></button>
                         )}
                         {u.canEdit && u.role !== 'teacher' && (
-                          <button onClick={() => revokeEdit(u.name)} className="cv-act-btn cv-act-revoke" title="Revoke edit">✗</button>
+                          <button onClick={() => revokeEdit(u.name)} className="p-1 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-600 hover:bg-amber-100" title="Revoke edit"><FaTimes className="text-[10px]" /></button>
                         )}
-                        <button onClick={() => kickUser(u.name)} className="cv-act-btn cv-act-kick" title="Remove user">⊘</button>
+                        <button onClick={() => kickUser(u.name)} className="p-1 rounded bg-red-50 dark:bg-red-900/30 text-red-600 hover:bg-red-100" title="Remove user"><FaBan className="text-[10px]" /></button>
                       </div>
                     )}
                   </div>
                 </div>
               ))}
             </div>
-            {typing && <p className="cv-typing">{typing}</p>}
+            {typing && <p className="text-[10px] text-amber-500 italic mt-2">{typing}</p>}
           </div>
 
           {/* Pending Hands */}
           {isTeacher && pendingHands.length > 0 && (
-            <div className="cv-sidebar-section cv-hands-section">
-              <h3 className="cv-sidebar-heading cv-hands-title">✋ Raised Hands ({pendingHands.length})</h3>
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-blue-50 dark:bg-blue-900/10">
+              <h3 className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-3 flex items-center gap-2"><FaHandPaper /> Raised Hands ({pendingHands.length})</h3>
               {pendingHands.map((name, i) => (
-                <div key={i} className="cv-hand-row">
+                <div key={i} className="flex flex-col gap-2 text-xs py-1">
                   <span>{name}</span>
-                  <div className="cv-hand-actions">
-                    <button onClick={() => approveHand(name)} className="cv-btn-approve">✓ Allow</button>
-                    <button onClick={() => rejectHand(name)} className="cv-btn-reject">✗ Deny</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => approveHand(name)} className="flex-1 py-1 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-semibold text-[10px]">Allow</button>
+                    <button onClick={() => rejectHand(name)} className="flex-1 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-semibold text-[10px]">Deny</button>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Language */}
-          <div className="cv-sidebar-section">
-            <h3 className="cv-sidebar-heading"><FaCode /> Language</h3>
-            <select value={language} onChange={handleLanguageChange} className="cv-input cv-select">
-              <option value="c">C</option>
-              <option value="cpp">C++</option>
-              <option value="python">Python</option>
-              <option value="javascript">JavaScript</option>
-              <option value="java">Java</option>
-            </select>
-          </div>
-
-          {/* File Upload */}
-          <div className="cv-sidebar-section">
-            <label className="cv-upload-label">
-              <input type="file" className="cv-file-input" onChange={handleFileUpload} />
-              <FaFileUpload /> Upload File
-            </label>
-            {uploadedFileName && <p className="cv-uploaded-name">📁 {uploadedFileName}</p>}
+          {/* Language & File Upload */}
+          <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-4">
+            <div>
+              <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2"><FaCode /> Language</h3>
+              <select value={language} onChange={handleLanguageChange} className="w-full text-xs px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-indigo-500">
+                <option value="c">C</option>
+                <option value="cpp">C++</option>
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="java">Java</option>
+              </select>
+            </div>
+            <div>
+              <label className="flex items-center justify-center gap-2 w-full py-2 bg-slate-50 dark:bg-slate-800 border border-dashed border-slate-400 dark:border-slate-600 rounded-md text-xs text-slate-500 font-medium cursor-pointer hover:border-indigo-500 hover:text-indigo-500 transition">
+                <input type="file" className="hidden" onChange={handleFileUpload} />
+                <FaFileUpload /> Upload File
+              </label>
+              {uploadedFileName && <p className="text-[10px] text-green-500 mt-1 truncate">{uploadedFileName}</p>}
+            </div>
           </div>
 
           {/* Teacher: Post Problem */}
           {isTeacher && (
-            <div className="cv-sidebar-section">
-              <h3 className="cv-sidebar-heading cv-problem-heading"><FaChalkboardTeacher /> Post Problem</h3>
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-2"><FaChalkboardTeacher /> Post Problem</h3>
               <input
                 type="text"
                 value={problemTitleInput}
                 onChange={(e) => setProblemTitleInput(e.target.value)}
                 placeholder="Problem title..."
-                className="cv-input cv-input-sm"
+                className="w-full text-xs px-2 py-1.5 mb-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:border-amber-500"
               />
               <textarea
                 value={problemInput}
                 onChange={(e) => setProblemInput(e.target.value)}
-                placeholder="Describe the problem..."
-                className="cv-problem-area"
-                rows={4}
+                placeholder="Describe problem..."
+                rows={3}
+                className="w-full text-xs p-2 mb-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-md resize-y focus:outline-none focus:border-amber-500"
               />
-              <button onClick={postProblem} className="cv-btn-post-problem">📌 Post to Students</button>
+              <button onClick={postProblem} className="w-full py-1.5 rounded bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition shadow-sm">Post to Students</button>
             </div>
           )}
 
           {/* Teacher: View Submissions */}
           {isTeacher && (
-            <div className="cv-sidebar-section">
-              <button onClick={loadSubmissions} className="cv-btn-submissions">
-                📊 View Submissions
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+              <button onClick={loadSubmissions} className="w-full flex items-center justify-center gap-2 py-2 rounded bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 text-xs font-bold transition hover:bg-indigo-100 dark:hover:bg-indigo-900/40">
+                <FaChartBar /> View Submissions
               </button>
             </div>
           )}
 
-          {/* Student: Raise Hand / Submit */}
+          {/* Student: Actions */}
           {!isTeacher && (
-            <div className="cv-sidebar-section">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 space-y-2 mt-auto">
               {(mode === 'raise_hand' || mode === 'group') && !canEdit && (
-                <button onClick={raiseHand} disabled={handRaised} className={`cv-btn-raise-hand ${handRaised ? 'cv-btn-hand-raised' : ''}`}>
-                  <FaHandPaper /> {handRaised ? '✋ Waiting...' : 'Raise Hand to Edit'}
+                <button onClick={raiseHand} disabled={handRaised} className={`w-full flex items-center justify-center gap-2 py-2 text-xs font-bold rounded text-white transition ${handRaised ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-sm'}`}>
+                  <FaHandPaper /> {handRaised ? 'Waiting...' : 'Raise Hand'}
                 </button>
               )}
-              <button onClick={submitCode} disabled={submitting} className="cv-btn-submit">
+              <button onClick={submitCode} disabled={submitting} className="w-full flex items-center justify-center gap-2 py-2 text-xs font-bold rounded bg-green-600 hover:bg-green-700 text-white transition shadow-sm disabled:opacity-70 disabled:cursor-not-allowed">
                 <FaPaperPlane /> {submitting ? 'Submitting...' : 'Submit Code'}
               </button>
             </div>
           )}
 
-          {/* Leave room */}
-          <div className="cv-sidebar-section">
-            <button onClick={leaveRoom} className="cv-btn-leave">
-              <FaSignOutAlt /> Leave Room
-            </button>
-          </div>
         </aside>
 
-        {/* ── Editor + Output ── */}
-        <div className={`cv-editor-area ${showChat ? 'cv-editor-shrink' : ''}`}>
-          {/* Problem display */}
+        {/* ── Editor & Output Area ── */}
+        <div className={`flex flex-col flex-1 min-w-0 ${showPanel && 'hidden md:flex'}`}>
+          
+          {/* Problem Banner */}
           {problem && (
-            <div className="cv-problem-banner">
-              <div className="cv-problem-banner-header">
-                <span>📌 {problemTitle || 'Problem Statement'}</span>
-                <button onClick={() => setShowProblem(!showProblem)} className="cv-problem-toggle">
-                  {showProblem ? '▲ Hide' : '▼ Show'}
-                </button>
+            <div className="bg-amber-50 dark:bg-amber-900/10 border-b border-amber-200 dark:border-amber-800/50 p-3 shrink-0">
+              <div className="flex items-center justify-between text-xs font-bold text-amber-600">
+                <span>Problem: {problemTitle || 'Statement'}</span>
+                <button onClick={() => setShowProblem(!showProblem)} className="focus:outline-none hover:text-amber-700">{showProblem ? 'Hide' : 'Show'}</button>
               </div>
-              {showProblem && <p className="cv-problem-text">{problem}</p>}
+              {showProblem && <p className="text-xs text-slate-700 dark:text-slate-300 mt-2 whitespace-pre-wrap">{problem}</p>}
             </div>
           )}
 
-          <div className="cv-editor-wrapper">
+          {/* CodeMirror/Monaco Wrapper */}
+          <div className="flex-1 relative min-h-0 bg-white dark:bg-[#1e1e1e]">
             <Editor
               height="100%"
               language={language}
               value={code}
               onChange={handleCodeChange}
-              theme="vs-dark"
+              theme={theme === 'dark' ? 'vs-dark' : 'light'}
               options={{
                 minimap: { enabled: false },
                 fontSize: 14,
@@ -491,33 +521,36 @@ const RoomPage = () => {
               }}
             />
             {!canEdit && (
-              <div className="cv-editor-readonly-overlay">
-                <span><FaEye /> Read-only — {mode === 'raise_hand' ? 'Raise your hand to edit' : 'Waiting for teacher'}</span>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-sm border border-red-500/50 rounded-full px-4 py-1.5 text-xs text-red-400 font-medium flex items-center gap-2 pointer-events-none">
+                <FaEye /> Read-only — {mode === 'raise_hand' ? 'Raise hand to edit' : 'Waiting for teacher'}
               </div>
             )}
           </div>
 
-          {/* ── Output / Input ── */}
-          <div className="cv-output-panel">
-            <div className="cv-output-header">
-              <button onClick={runCode} className="cv-btn-run">
+          {/* Output Panel */}
+          <div className="h-48 shrink-0 flex flex-col border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+            <div className="flex items-center gap-4 px-4 py-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+              <button onClick={runCode} className="flex items-center gap-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded shadow-sm transition">
                 <FaPlay /> Run Code
               </button>
-              <span className="cv-lang-badge">{language.toUpperCase()}</span>
+              <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded">{language.toUpperCase()}</span>
             </div>
-            <div className="cv-io-grid">
-              <div className="cv-io-col">
-                <label className="cv-io-label">📥 Input (stdin)</label>
+            
+            <div className="flex flex-1 min-h-0 divide-x divide-slate-200 dark:divide-slate-800">
+              <div className="flex-1 flex flex-col min-w-0">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 py-1 bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">Input (stdin)</div>
                 <textarea
-                  className="cv-io-area"
+                  className="flex-1 w-full bg-white dark:bg-slate-950 border-none resize-none p-3 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none"
                   value={inputData}
                   onChange={(e) => setInputData(e.target.value)}
                   placeholder="Provide input here..."
                 />
               </div>
-              <div className="cv-io-col">
-                <label className="cv-io-label">📤 Output</label>
-                <pre className="cv-io-area cv-output-area">{output || 'Output will appear here...'}</pre>
+              <div className="flex-1 flex flex-col min-w-0">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 py-1 bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">Output</div>
+                <pre className="flex-1 w-full bg-slate-50 dark:bg-slate-950 overflow-y-auto p-3 text-xs font-mono text-slate-800 dark:text-slate-200 whitespace-pre-wrap word-break">
+                  {output || 'Output will appear here...'}
+                </pre>
               </div>
             </div>
           </div>
@@ -525,33 +558,38 @@ const RoomPage = () => {
 
         {/* ── Chat Panel ── */}
         {showChat && (
-          <aside className="cv-chat-panel">
-            <div className="cv-chat-header">
-              <h3><FaComments /> Room Chat</h3>
-              <button onClick={() => setShowChat(false)} className="cv-icon-btn-sm"><FaTimes /></button>
+          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-72 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col z-40 shadow-2xl sm:relative sm:shadow-none transition-all">
+            <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-800">
+              <h3 className="text-sm font-bold flex items-center gap-2"><FaComments className="text-indigo-500" /> Chat</h3>
+              <button onClick={() => setShowChat(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><FaTimes /></button>
             </div>
-            <div className="cv-chat-messages">
-              {chatMessages.length === 0
-                ? <p className="cv-chat-empty">No messages yet. Say hello! 👋</p>
-                : chatMessages.map((msg, i) => (
-                  <div key={i} className={`cv-chat-msg ${msg.user === user?.name ? 'cv-chat-mine' : 'cv-chat-theirs'}`}>
-                    <span className="cv-chat-sender">{msg.user === user?.name ? 'You' : msg.user}</span>
-                    <span className="cv-chat-bubble">{msg.message}</span>
+            
+            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3 bg-slate-50 dark:bg-slate-950/50">
+              {chatMessages.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center mt-8">No messages yet.</p>
+              ) : (
+                chatMessages.map((msg, i) => (
+                  <div key={i} className={`flex flex-col max-w-[85%] ${msg.user === user?.name ? 'self-end items-end' : 'self-start items-start'}`}>
+                    <span className="text-[9px] text-slate-400 mb-0.5 font-medium">{msg.user === user?.name ? 'You' : msg.user}</span>
+                    <div className={`px-3 py-1.5 text-xs rounded-lg rounded-tl-sm ${msg.user === user?.name ? 'bg-indigo-600 text-white rounded-br-sm rounded-bl-lg rounded-tr-lg rounded-tl-lg' : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-bl-sm rounded-br-lg rounded-tr-lg rounded-tl-lg text-slate-800 dark:text-slate-200'}`}>
+                      {msg.message}
+                    </div>
                   </div>
                 ))
-              }
+              )}
               <div ref={chatEndRef} />
             </div>
-            <div className="cv-chat-input-row">
+            
+            <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2">
               <input
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Type a message..."
-                className="cv-input"
+                placeholder="Type..."
+                className="flex-1 min-w-0 bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-indigo-500 rounded-md px-3 py-1.5 text-xs text-slate-800 dark:text-slate-100 focus:outline-none transition-colors"
               />
-              <button onClick={sendMessage} className="cv-btn-send"><FaPaperPlane /></button>
+              <button onClick={sendMessage} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md text-xs transition-colors shrink-0"><FaPaperPlane /></button>
             </div>
           </aside>
         )}
@@ -559,28 +597,35 @@ const RoomPage = () => {
 
       {/* ── Submissions Modal ── */}
       {showSubmissions && (
-        <div className="cv-modal-overlay" onClick={() => setShowSubmissions(false)}>
-          <div className="cv-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="cv-modal-header">
-              <h2>📊 Student Submissions</h2>
-              <button onClick={() => setShowSubmissions(false)} className="cv-icon-btn-sm"><FaTimes /></button>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowSubmissions(false)}>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+              <h2 className="text-lg font-bold flex items-center gap-2"><FaCheckCircle className="text-green-500" /> Student Submissions</h2>
+              <button onClick={() => setShowSubmissions(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500"><FaTimes /></button>
             </div>
-            <div className="cv-submissions-list">
-              {submissions.length === 0
-                ? <p className="cv-empty-msg">No submissions yet.</p>
-                : submissions.map((sub, i) => (
-                  <div key={i} className="cv-submission-card">
-                    <div className="cv-sub-header">
-                      <span className="cv-sub-name">{sub.studentName}</span>
-                      <span className="cv-sub-lang">{sub.language.toUpperCase()}</span>
-                      <span className="cv-sub-time">{new Date(sub.createdAt).toLocaleString()}</span>
-                      <span className={`cv-sub-status cv-status-${sub.status}`}>{sub.status}</span>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {submissions.length === 0 ? (
+                <p className="text-center text-slate-400 text-sm py-8">No submissions yet.</p>
+              ) : (
+                submissions.map((sub, i) => (
+                  <div key={i} className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+                    <div className="flex flex-wrap items-center gap-3 mb-3">
+                      <span className="font-bold text-sm text-slate-800 dark:text-slate-100 flex-1">{sub.studentName}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded">{sub.language.toUpperCase()}</span>
+                      <span className="text-xs text-slate-500">{new Date(sub.createdAt).toLocaleString()}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 uppercase">{sub.status}</span>
                     </div>
-                    <pre className="cv-sub-code">{sub.code}</pre>
-                    {sub.output && <pre className="cv-sub-output">Output: {sub.output}</pre>}
+                    <div className="bg-slate-950 rounded-md border border-slate-800 overflow-hidden">
+                      <pre className="p-3 text-xs font-mono text-slate-300 overflow-x-auto max-h-48 overflow-y-auto">{sub.code}</pre>
+                    </div>
+                    {sub.output && (
+                      <div className="mt-3 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 rounded-md overflow-hidden">
+                        <pre className="p-2 text-xs font-mono text-green-700 dark:text-green-400 max-h-24 overflow-y-auto">{sub.output}</pre>
+                      </div>
+                    )}
                   </div>
                 ))
-              }
+              )}
             </div>
           </div>
         </div>
