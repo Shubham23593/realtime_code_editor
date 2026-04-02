@@ -7,6 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node backend/index.js",
     "dev": "nodemon backend/index.js",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:frontend\"",
     "build": "npm install && cd frontend && npm install && npm run build"
   },
   "keywords": [],
@@ -16,14 +18,20 @@
   "dependencies": {
     "@monaco-editor/react": "^4.4.6",
     "axios": "^1.11.0",
+    "bcryptjs": "^3.0.3",
     "buffer": "^6.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.0",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.3.3",
     "process": "^0.11.10",
     "simple-peer": "^9.11.1",
     "socket.io": "^4.8.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "nodemon": "^3.1.10",
     "rollup-plugin-node-polyfills": "^0.2.1"
   }
