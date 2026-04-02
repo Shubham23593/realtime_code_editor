@@ -14,7 +14,7 @@ import {
 import AnimatedBackground from '../components/AnimatedBackground';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_API_URL || window.location.origin;
 
 const LANG_TEMPLATES = {
   c: `#include <stdio.h>\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}`,
