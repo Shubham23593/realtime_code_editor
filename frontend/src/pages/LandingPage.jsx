@@ -18,50 +18,7 @@ const Particle = ({ style }) => (
   />
 );
 
-/* ─────────────────────────────────────────────
-   Animated counter hook
-───────────────────────────────────────────── */
-const useCounter = (end, duration = 2, start = false) => {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    if (!start) return;
-    let startTime = null;
-    const step = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
-      setCount(Math.floor(progress * end));
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, [start, end, duration]);
-  return count;
-};
 
-/* ─────────────────────────────────────────────
-   Stats counter row
-───────────────────────────────────────────── */
-const StatsRow = ({ triggered }) => {
-  const c1 = useCounter(12000, 2.2, triggered);
-  const c2 = useCounter(98, 1.8, triggered);
-  const c3 = useCounter(5, 1.5, triggered);
-  const stats = [
-    { value: c1, suffix: '+', label: 'Active Learners' },
-    { value: c2, suffix: '%', label: 'Satisfaction Rate' },
-    { value: c3, suffix: ' langs', label: 'Supported' },
-  ];
-  return (
-    <div className="grid grid-cols-3 gap-4 sm:gap-8 mt-16 max-w-2xl mx-auto">
-      {stats.map((s, i) => (
-        <div key={i} className="text-center">
-          <div className="text-3xl sm:text-5xl font-black text-white font-mono">
-            {s.value.toLocaleString()}<span className="text-indigo-400">{s.suffix}</span>
-          </div>
-          <div className="text-slate-400 text-xs sm:text-sm mt-1 font-medium tracking-wide uppercase">{s.label}</div>
-        </div>
-      ))}
-    </div>
-  );
-};
 
 /* ─────────────────────────────────────────────
    Code snippet that types itself
@@ -134,10 +91,8 @@ const LandingPage = () => {
   const heroSubRef = useRef(null);
   const heroCTARef = useRef(null);
   const heroVisualRef = useRef(null);
-  const statsRef = useRef(null);
   const storyChaptersRef = useRef([]);
   const orbRef = useRef(null);
-  const [statsTriggered, setStatsTriggered] = useState(false);
   const [activeChapter, setActiveChapter] = useState(0);
 
   /* ── Particles and Canvas logic moved to AnimatedBackground Component ── */
@@ -182,12 +137,6 @@ const LandingPage = () => {
 
       /* — Floating orb parallax — (Orb logic is now handled internally or natively animate based in AnimatedBackground) */
 
-      /* — Stats counter trigger — */
-      ScrollTrigger.create({
-        trigger: statsRef.current,
-        start: 'top 80%',
-        onEnter: () => setStatsTriggered(true),
-      });
 
       /* — Story section: chapter-by-chapter reveal — */
       storyChaptersRef.current.forEach((el, i) => {
@@ -374,7 +323,7 @@ const LandingPage = () => {
             </p>
 
             <div ref={heroCTARef} className="flex flex-col sm:flex-row gap-3">
-              <button
+              {/* <button
                 onClick={() => navigate('/signup')}
                 onMouseMove={handleMagnet}
                 onMouseLeave={handleMagnetLeave}
@@ -382,7 +331,7 @@ const LandingPage = () => {
               >
                 Start Free Trial
                 <FaArrowRight className="group-hover:translate-x-1 transition-transform duration-200" />
-              </button>
+              </button> */}
               <button
                 onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
                 className="flex items-center justify-center gap-2.5 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 hover:border-slate-600 text-slate-200 px-8 py-4 rounded-2xl font-semibold text-base transition-all duration-200"
@@ -422,12 +371,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════
-          STATS
-      ═══════════════════════════════════════ */}
-      <div ref={statsRef} className="relative z-10 py-16 px-4 border-t border-slate-800/60">
-        <StatsRow triggered={statsTriggered} />
-      </div>
 
       {/* ═══════════════════════════════════════
           STORY SECTION (Chapters)
